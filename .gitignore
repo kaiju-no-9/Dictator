@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Turbo
+.turbo/
+
+# Testing
+coverage/
+.pytest_cache/
+
+# Drizzle
+drizzle/meta/
+
+# Media (test files)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.wav
+*.mp3
+!spike/test_video.mp4
+
+# MinIO data
+minio_data/
