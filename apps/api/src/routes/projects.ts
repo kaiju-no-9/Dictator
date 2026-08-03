@@ -4,6 +4,7 @@ import { projectRepo } from '../db/repositories/project.js';
 import { mediaRepo } from '../db/repositories/media.js';
 import { planRepo } from '../db/repositories/plan.js';
 import { logger } from '../middleware/logger.js';
+import { pipelineService } from '../services/pipeline.js';
 
 export const projectRoutes = new Hono();
 
@@ -68,9 +69,8 @@ projectRoutes.post('/:id/process', async (c) => {
     );
   }
 
-  await projectRepo.updateStatus(project.id, 'processing');
-  logger.info({ projectId: project.id }, 'Pipeline started');
+  const job = await pipelineService.start(project.id);
+  logger.info({ projectId: project.id, jobId: job.id }, 'Pipeline started');
 
-  // TODO: enqueue BullMQ pipeline job (Part C)
-  return c.json({ message: 'Pipeline started', project_id: project.id, status: 'processing' }, 202);
+  return c.json({ job_id: job.id, status: 'queued', project_id: project.id }, 202);
 });
