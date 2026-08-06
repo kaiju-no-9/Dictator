@@ -19,6 +19,10 @@ Base URL: `http://localhost:8000/api/v1`
 - `PUT /api/v1/projects/:id/plan` — Update Edit Plan (Human Edits)
 - `GET /api/v1/projects/:id/plan/revisions` — List Plan Revision History
 
+## Conversational Editing
+- `GET /api/v1/projects/:id/chat` — Get Chat History
+- `POST /api/v1/projects/:id/chat` — Send Edit Instruction (returns modified plan)
+
 ## Rendering
 - `POST /api/v1/projects/:id/render` — Trigger Render (proxy or final)
 - `GET /api/v1/projects/:id/renders/:renderId` — Get Render Status

@@ -127,3 +127,15 @@ export const jobEvents = pgTable('job_events', {
   data: jsonb('data'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  projectId: uuid('project_id').notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  role: varchar('role', { length: 20 }).notNull(),             // "user" | "assistant"
+  content: text('content').notNull(),
+  planRevisionId: uuid('plan_revision_id').references(() => editPlanRevisions.id), // which revision this message created (nullable)
+  changes: jsonb('changes'),                                    // list of human-readable change descriptions
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ([
+  index('idx_chat_messages_project').on(t.projectId),
+]));

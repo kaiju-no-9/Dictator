@@ -10,6 +10,7 @@ import { uploadRoutes } from './routes/uploads.js';
 import { planRoutes } from './routes/plans.js';
 import { renderRoutes } from './routes/renders.js';
 import { jobRoutes } from './routes/jobs.js';
+import { chatRoutes } from './routes/chat.js';
 
 const app = new Hono();
 
@@ -30,6 +31,7 @@ api.route('/projects', projectRoutes);   // POST /projects, GET /projects, GET /
 api.route('/projects', uploadRoutes);    // POST /projects/:id/uploads
 api.route('/projects', planRoutes);      // GET/PUT /projects/:id/plan, GET /projects/:id/plan/revisions
 api.route('/projects', renderRoutes);    // POST /projects/:id/render, GET /projects/:id/renders/:id
+api.route('/projects', chatRoutes);      // GET/POST /projects/:id/chat
 api.route('/jobs', jobRoutes);           // GET /jobs/:id
 
 app.route('/api/v1', api);
