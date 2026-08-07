@@ -15,20 +15,13 @@ class CritiqueRequest(BaseModel):
     style_brief: str | None = Field(default=None, description="Original style brief")
 
 
-class CritiqueIssue(BaseModel):
-    severity: str
-    category: str
-    shot_id: str | None = None
-    message: str
-    suggestion: str | None = None
-
-
 class CritiqueResponse(BaseModel):
     project_id: str
-    score: float = Field(..., ge=0.0, le=10.0, description="Overall edit quality score 0–10")
-    issues: list[CritiqueIssue]
+    score: float = Field(..., ge=0.0, le=100.0, description="Overall edit quality score 0–100")
     summary: str
-    revised_plan: dict | None = None
+    strengths: list[str] = []
+    weaknesses: list[str] = []
+    recommendations: list[str] = []
 
 
 @router.post("", response_model=CritiqueResponse)
@@ -45,36 +38,27 @@ async def critique(request: CritiqueRequest) -> CritiqueResponse:
     try:
         from src.agent.service import AgentService
 
-        service = AgentService(
+        service = AgentService()
+        res = await service.critique_plan(
             project_id=request.project_id,
-            shots=request.plan.get("source_shots", []),
-            transcript=[],
-            tags={},
-            style_brief=request.style_brief,
-            mode="critique",
-            existing_plan=request.plan,
-            proxy_url=request.proxy_url,
+            plan=request.plan,
         )
-
-        result = await service.run()
 
     except Exception as exc:
         logger.error("Critique agent failed | project=%s error=%s", request.project_id, exc)
         raise HTTPException(status_code=500, detail=f"Critique agent failed: {exc}")
 
-    issues = [CritiqueIssue(**issue) for issue in result.get("issues", [])]
-
     logger.info(
-        "Critique complete | project=%s score=%.1f issues=%d",
+        "Critique complete | project=%s score=%.1f",
         request.project_id,
-        result.get("score", 0.0),
-        len(issues),
+        float(res.get("score", 0)),
     )
 
     return CritiqueResponse(
         project_id=request.project_id,
-        score=result.get("score", 0.0),
-        issues=issues,
-        summary=result.get("summary", ""),
-        revised_plan=result.get("revised_plan"),
+        score=float(res.get("score", 0)),
+        summary=res.get("summary", ""),
+        strengths=res.get("strengths", []),
+        weaknesses=res.get("weaknesses", []),
+        recommendations=res.get("recommendations", []),
     )

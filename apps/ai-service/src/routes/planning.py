@@ -19,6 +19,8 @@ class ShotInput(BaseModel):
     visual_description: str | None = None
     quality_score: float | None = None
     group_id: str | None = None
+    is_best_take: bool = True
+    role: str = "primary"
 
 
 class TranscriptSegmentInput(BaseModel):
@@ -39,7 +41,6 @@ class PlanRequest(BaseModel):
 class PlanResponse(BaseModel):
     project_id: str
     plan: dict
-    agent_iterations: int
     validation_passed: bool
     violations: list[dict] = []
 
@@ -57,32 +58,32 @@ async def generate_plan(request: PlanRequest) -> PlanResponse:
 
     try:
         from src.agent.service import AgentService
+        from src.validation.structural import validate_edit_plan
 
-        service = AgentService(
+        service = AgentService()
+        plan_dict = await service.generate_plan(
             project_id=request.project_id,
             shots=[s.model_dump() for s in request.shots],
             transcript=[t.model_dump() for t in request.transcript],
             tags=request.tags,
-            style_brief=request.style_brief,
+            prompt=request.style_brief,
         )
 
-        result = await service.run()
+        validation = validate_edit_plan(plan_dict)
 
     except Exception as exc:
         logger.error("Planning agent failed | project=%s error=%s", request.project_id, exc)
         raise HTTPException(status_code=500, detail=f"Planning agent failed: {exc}")
 
     logger.info(
-        "Planning complete | project=%s iterations=%d valid=%s",
+        "Planning complete | project=%s valid=%s",
         request.project_id,
-        result["agent_iterations"],
-        result["validation_passed"],
+        validation.valid,
     )
 
     return PlanResponse(
         project_id=request.project_id,
-        plan=result["plan"],
-        agent_iterations=result["agent_iterations"],
-        validation_passed=result["validation_passed"],
-        violations=result.get("violations", []),
+        plan=plan_dict,
+        validation_passed=validation.valid,
+        violations=[v.to_dict() for v in validation.violations],
     )
