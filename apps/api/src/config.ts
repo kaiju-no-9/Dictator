@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().default('postgres://dictator:dictator@localhost:5432/dictator'),
+  DATABASE_URL: z.string().default('postgres://dictator:dictator_dev@localhost:5432/dictator'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
   S3_ENDPOINT: z.string().default('http://localhost:9000'),
   S3_ACCESS_KEY: z.string().default('minioadmin'),

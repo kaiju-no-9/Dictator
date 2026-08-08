@@ -172,7 +172,12 @@ class AgentLoop:
         elif name == "get_tags":
             return get_tags(self.tags_context, args.get("shot_id"))
         elif name == "search_shots":
-            return search_shots(self.shots_context, args.get("query", ""))
+            return search_shots(
+                self.shots_context,
+                args.get("query", ""),
+                transcript_context=self.transcript_context,
+                tags_context=self.tags_context,
+            )
         elif name == "propose_plan":
             return propose_plan(args.get("plan_json", ""))
         elif name == "validate_plan":

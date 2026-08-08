@@ -8,7 +8,7 @@ import { pipelineService } from '../services/pipeline.js';
 
 export const projectRoutes = new Hono();
 
-// ── Request schemas 
+// ── Request schemas
 const createProjectSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
@@ -44,7 +44,6 @@ projectRoutes.get('/:id', async (c) => {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Project not found' } }, 404);
   }
 
-  // Attach media files and current plan revision
   const mediaFiles = await mediaRepo.findByProject(project.id);
   const latestPlan = await planRepo.findLatest(project.id);
 
@@ -62,12 +61,17 @@ projectRoutes.post('/:id/process', async (c) => {
     return c.json({ error: { code: 'NOT_FOUND', message: 'Project not found' } }, 404);
   }
 
-  if (project.status === 'processing') {
+  const force = c.req.query('force') === 'true';
+
+  if (project.status === 'processing' && !force) {
     return c.json(
-      { error: { code: 'CONFLICT', message: 'Pipeline is already running for this project' } },
+      { error: { code: 'CONFLICT', message: 'Pipeline is already running for this project. Pass ?force=true to restart.' } },
       409
     );
   }
+
+  // Reset status to allow re-processing
+  await projectRepo.updateStatus(project.id, 'uploading');
 
   const job = await pipelineService.start(project.id);
   logger.info({ projectId: project.id, jobId: job.id }, 'Pipeline started');

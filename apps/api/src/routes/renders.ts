@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { renderRepo } from '../db/repositories/render.js';
 import { planRepo } from '../db/repositories/plan.js';
 import { projectRepo } from '../db/repositories/project.js';
+import { renderQueue } from '../queue/bullmq.js';
 import { logger } from '../middleware/logger.js';
 
 export const renderRoutes = new Hono();
@@ -12,7 +13,7 @@ const renderRequestSchema = z.object({
   plan_revision: z.number().int().positive().optional(),
 });
 
-// /projects/:id/render 
+// /projects/:id/render
 renderRoutes.post('/:id/render', async (c) => {
   const projectId = c.req.param('id');
 
@@ -46,16 +47,23 @@ renderRoutes.post('/:id/render', async (c) => {
     status: 'queued',
   });
 
-  logger.info({ projectId, renderId: renderJob.id, type: parsed.data.type }, 'Render queued');
+  logger.info({ projectId, renderId: renderJob.id, type: parsed.data.type }, 'Render queued in DB');
 
-  // TODO: Enqueue BullMQ render job (Part C)
+  // Enqueue BullMQ render job
+  await renderQueue.add('render-manual', {
+    projectId,
+    renderType: parsed.data.type,
+    planRevisionId: plan.revisionNumber,
+    dbRenderJobId: renderJob.id,
+  });
+
   return c.json(
     { render_id: renderJob.id, status: renderJob.status, render_type: renderJob.renderType },
     202
   );
 });
 
-// /projects/:id/renders/:renderId 
+// /projects/:id/renders/:renderId
 renderRoutes.get('/:id/renders/:renderId', async (c) => {
   const renderJob = await renderRepo.findById(c.req.param('renderId'));
 

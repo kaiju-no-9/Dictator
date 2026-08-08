@@ -36,12 +36,13 @@ export interface VideoMetadata {
 function run(cmd: ffmpeg.FfmpegCommand): Promise<void> {
   return new Promise((resolve, reject) => {
     cmd
-      .on('start', (cmdLine) => logger.debug({ cmdLine }, 'FFmpeg started'))
+      .on('start', (cmdLine) => logger.info({ cmdLine }, 'FFmpeg started'))
       .on('end', () => resolve())
       .on('error', (err, _stdout, stderr) => {
         logger.error({ err, stderr }, 'FFmpeg error');
         reject(err);
-      });
+      })
+      .run();
   });
 }
 
@@ -109,7 +110,7 @@ export async function extractClip(
   }
 
   await run(cmd.output(outputPath));
-  logger.debug({ outputPath, duration }, 'Clip extracted');
+  logger.info({ outputPath, duration }, 'Clip extracted');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ export async function createProxy(
     ffmpeg(inputPath)
       .videoCodec('libx264')
       .audioCodec('aac')
-      .size(`?x${height}`)           // scale to height, keep aspect ratio
+      .size(`?x${height}`)
       .outputOptions([
         `-crf ${crf}`,
         '-preset fast',
@@ -135,7 +136,7 @@ export async function createProxy(
       .output(outputPath)
   );
 
-  logger.debug({ outputPath, height }, 'Proxy created');
+  logger.info({ outputPath, height }, 'Proxy created');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -154,12 +155,11 @@ export async function extractThumbnail(
       .output(outputPath)
   );
 
-  logger.debug({ outputPath, atSecond }, 'Thumbnail extracted');
+  logger.info({ outputPath, atSecond }, 'Thumbnail extracted');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 5. Concatenate multiple pre-trimmed clip files into one output video
-//    Uses FFmpeg concat demuxer — lossless, no re-encode needed
 // ─────────────────────────────────────────────────────────────────────────────
 export async function concatenateClips(
   clipPaths: string[],
@@ -168,7 +168,6 @@ export async function concatenateClips(
 ): Promise<void> {
   if (clipPaths.length === 0) throw new Error('No clips to concatenate');
 
-  // Write the concat manifest
   const lines = clipPaths.map((p) => `file '${p}'`).join('\n');
   await fs.writeFile(concatListPath, lines, 'utf-8');
 
@@ -176,13 +175,12 @@ export async function concatenateClips(
     ffmpeg()
       .input(concatListPath)
       .inputOptions(['-f concat', '-safe 0'])
-      .outputOptions(['-c copy'])   // stream copy — no re-encode
+      .outputOptions(['-c copy'])
       .output(outputPath)
   );
 
-  // Clean up manifest
   await fs.unlink(concatListPath).catch(() => {});
-  logger.debug({ outputPath, clips: clipPaths.length }, 'Clips concatenated');
+  logger.info({ outputPath, clips: clipPaths.length }, 'Clips concatenated');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,7 +193,6 @@ export async function renderEditPlan(
 ): Promise<void> {
   await fs.mkdir(workDir, { recursive: true });
 
-  // Extract each clip to a temp file
   const clipPaths: string[] = [];
   for (let i = 0; i < segments.length; i++) {
     const clipPath = path.join(workDir, `clip_${String(i).padStart(3, '0')}.mp4`);
@@ -204,11 +201,9 @@ export async function renderEditPlan(
     logger.info({ clip: i + 1, total: segments.length }, 'Clip rendered');
   }
 
-  // Concatenate all clips
   const concatListPath = path.join(workDir, 'concat.txt');
   await concatenateClips(clipPaths, outputPath, concatListPath);
 
-  // Clean up temp clips
   await Promise.all(clipPaths.map((p) => fs.unlink(p).catch(() => {})));
 
   logger.info({ outputPath, clips: segments.length }, 'Full render complete');

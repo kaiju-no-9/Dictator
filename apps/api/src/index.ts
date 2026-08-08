@@ -11,6 +11,7 @@ import { planRoutes } from './routes/plans.js';
 import { renderRoutes } from './routes/renders.js';
 import { jobRoutes } from './routes/jobs.js';
 import { chatRoutes } from './routes/chat.js';
+import './queue/workers.js';
 
 const app = new Hono();
 
@@ -45,6 +46,7 @@ serve(
     logger.info(`✅ Dictator API running at http://localhost:${info.port}`);
     logger.info(`   Health: http://localhost:${info.port}/health`);
     logger.info(`   API:    http://localhost:${info.port}/api/v1`);
+    logger.info(`   Queue:  BullMQ workers active (ingestion, ai, validation, render)`);
   }
 );
 

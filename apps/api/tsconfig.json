@@ -1,10 +1,12 @@
 {
-  "extends": "@dictator/tsconfig/node.json",
+  "extends": "../../packages/tsconfig/node.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": {}
+    "paths": {
+      "@dictator/shared": ["../../packages/shared/src/index.ts"]
+    }
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "include": ["src", "tests"],
+  "exclude": ["node_modules", "dist"]
 }

@@ -17,10 +17,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
     {
       error: {
         code: 'INTERNAL_ERROR',
-        message:
-          process.env.NODE_ENV === 'development'
-            ? err.message
-            : 'An unexpected error occurred',
+        message: err.message || 'An unexpected error occurred',
       },
     },
     500
